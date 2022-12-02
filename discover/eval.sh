@@ -45,7 +45,7 @@ function archive() {
     --derivation \
     --no-auto-optimise-store \
     --to "$DISC_PATH" \
-    $(jq -r '.[]|to_entries[]|select(.key|test("Drv$"))|select(.value|.!=null)|.value' <<< "$JSON")
+    $(jq -r '.[]|to_entries[].value[]|to_entries[].value|select(test("drv$"))' <<< "$JSON")
 
   tar -C "$DISC_PATH" --zstd -f "$DISC_ARC_PATH" -c .
 
