@@ -11,7 +11,7 @@ function eval() {
 
   system="$(nix eval --raw --impure --expr 'builtins.currentSystem')"
   JSON="$(
-    nix eval "$FLAKE#__std.ci'.$system" --json | jq '
+    nix eval "$FLAKE#__std.ci'.$system" --json | jq -r '
       group_by(.block)
       | map({
         key: .[0].block,
