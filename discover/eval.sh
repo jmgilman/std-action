@@ -24,7 +24,7 @@ function eval() {
           | from_entries
         )
       })
-      | from_entries'
+      | from_entries' | jq -r tostring
   )"
 
   echo "json=$JSON" >> "$GITHUB_OUTPUT"
