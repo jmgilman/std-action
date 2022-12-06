@@ -5,13 +5,17 @@ set -e
 declare JSON
 
 function eval() {
-  echo "::group::Nix Evaluation"
+    echo "::group::Nix Evaluation"
 
-  local system
+    local system
 
-  system="$(nix eval --raw --impure --expr 'builtins.currentSystem')"
-  list="$(nix eval "$FLAKE#__std.ci'.$system" --json)"
-  JSON="$(jq -c '
+    echo "Determining system..."
+    system="$(nix eval --show-trace --raw --impure --expr 'builtins.currentSystem')"
+
+    echo "Fetching CI JSON..."
+    list="$(nix eval --show-trace "$FLAKE#__std.ci'.$system" --json)"
+    JSON="$(
+        jq -c '
       group_by(.block)
       | map({
         key: .[0].block,
@@ -24,32 +28,32 @@ function eval() {
           | from_entries
         )
       })
-      | from_entries' <<< "$list"
-  )"
+      | from_entries' <<<"$list"
+    )"
 
-  echo "json=$JSON" >> "$GITHUB_OUTPUT"
+    echo "json=$JSON" >>"$GITHUB_OUTPUT"
 
-  echo "nix_conf=$(nix eval --raw "$FLAKE#__std.nixConfig")" >> "$GITHUB_OUTPUT"
+    echo "nix_conf=$(nix eval --raw "$FLAKE#__std.nixConfig")" >>"$GITHUB_OUTPUT"
 
-  echo "::debug::$JSON"
+    echo "::debug::$JSON"
 
-  echo "::endgroup::"
+    echo "::endgroup::"
 }
 
 function archive() {
-  echo "::group::Archive Evaluation Result"
+    echo "::group::Archive Evaluation Result"
 
-  #shellcheck disable=SC2046
-  nix copy \
-    --no-check-sigs \
-    --derivation \
-    --no-auto-optimise-store \
-    --to "$DISC_PATH" \
-    $(jq -r '.[]|to_entries[]|select(.key|test("Drv$"))|select(.value|.!=null)|.value' <<< "$list")
+    #shellcheck disable=SC2046
+    nix copy \
+        --no-check-sigs \
+        --derivation \
+        --no-auto-optimise-store \
+        --to "$DISC_PATH" \
+        $(jq -r '.[]|to_entries[]|select(.key|test("Drv$"))|select(.value|.!=null)|.value' <<<"$list")
 
-  tar -C "$DISC_PATH" --zstd -f "$DISC_ARC_PATH" -c .
+    tar -C "$DISC_PATH" --zstd -f "$DISC_ARC_PATH" -c .
 
-  echo "::endgroup::"
+    echo "::endgroup::"
 }
 
 eval
