@@ -31,11 +31,14 @@ function eval() {
       | from_entries' <<<"$list"
     )"
 
+    nix_conf="$(nix eval --raw "$FLAKE#__std.nixConfig")"
+
     echo "json=$JSON" >>"$GITHUB_OUTPUT"
 
-    echo "nix_conf=$(nix eval --raw "$FLAKE#__std.nixConfig")" >>"$GITHUB_OUTPUT"
+    echo "nix_conf=$nix_conf" >>"$GITHUB_OUTPUT"
 
     echo "::debug::$JSON"
+    echo "::debug::$nix_conf"
 
     echo "::endgroup::"
 }
